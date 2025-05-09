@@ -108,8 +108,13 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       display: none;
-      white-space: pre-wrap;
       background-color: #fafafa;
+    }
+
+    #download-pdf {
+      margin-top: 15px;
+      font-size: 14px;
+      padding: 10px;
     }
   </style>
 </head>
@@ -120,7 +125,7 @@
     <form id="change-form">
       <div class="form-group">
         <label for="change_description">Change Description</label>
-        <textarea name="change_description" id="change_description" placeholder="Describe the change (e.g., new material in contact with body, closed-loop software update)..." required></textarea>
+        <textarea name="change_description" id="change_description" placeholder="Describe the change..." required></textarea>
       </div>
       <button type="submit" id="submit-button">
         <span class="btn-text">Assess</span>
@@ -131,19 +136,22 @@
     <div id="result">
       <h2>Assessment Report</h2>
       <div id="report-output" style="margin-bottom: 20px;"></div>
+      <button id="download-pdf">Download as PDF</button>
     </div>
   </div>
+
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <script>
     const form = document.getElementById('change-form');
     const resultDiv = document.getElementById('result');
     const reportOutput = document.getElementById('report-output');
     const submitButton = document.getElementById('submit-button');
+    const downloadPDFBtn = document.getElementById('download-pdf');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      // Add loading state
       submitButton.classList.add("loading");
       submitButton.disabled = true;
 
@@ -162,10 +170,10 @@
         const result = await response.json();
         reportOutput.innerHTML = formatReport(result.report);
         resultDiv.style.display = 'block';
+
       } catch (error) {
         alert('Error assessing change: ' + error.message);
       } finally {
-        // Remove loading state
         submitButton.classList.remove("loading");
         submitButton.disabled = false;
       }
@@ -173,7 +181,6 @@
 
     function formatReport(text) {
       text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
       const lines = text.split('\n');
       let inList = false;
       let html = '';
@@ -200,6 +207,17 @@
       if (inList) html += '</ul>';
       return html;
     }
+
+    downloadPDFBtn.addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const content = reportOutput.innerText;
+
+      const lines = doc.splitTextToSize(content, 500);
+      doc.setFontSize(12);
+      doc.text(lines, 40, 60);
+      doc.save('mdcg_change_assessment.pdf');
+    });
   </script>
 </body>
 </html>
