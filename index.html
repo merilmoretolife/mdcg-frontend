@@ -3,40 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MDCG 2020-3 Change Assessment Tool</title>
+  <title>MDCG Change Notification Assessment Tool</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
-    h1 { font-size: 24px; }
-    h2 { font-size: 20px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    textarea { width: 100%; padding: 8px; box-sizing: border-box; height: 150px; }
-    button { background: #007BFF; color: white; border: none; cursor: pointer; padding: 10px; width: 100%; }
-    button:hover { background: #0056b3; }
-    #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; display: none; white-space: pre-wrap; }
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      min-height: 100vh;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #fff;
+      padding: 30px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      height: 150px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      white-space: pre-wrap;
+      background-color: #fafafa;
+    }
   </style>
 </head>
 <body>
-  <h1>MDCG 2020-3 Rev.1 Change Assessment Tool</h1>
-  <form id="change-form">
-    <div class="form-group">
-      <label for="change_description">Change Description</label>
-      <textarea name="change_description" id="change_description" placeholder="Enter your change..." required></textarea>
-    </div>
-    <button type="submit">Assess</button>
-  </form>
+  <div class="container">
+    <h1>MDCG 2020-3 Rev.1 Change Assessment Tool</h1>
 
-  <div id="result">
-    <h2>Assessment Report</h2>
-    <div id="report-output" style="margin-bottom: 20px;"></div>
-    <button id="download-report">Download Report</button>
+    <form id="change-form">
+      <div class="form-group">
+        <label for="change_description">Change Description</label>
+        <textarea name="change_description" id="change_description" placeholder="Describe the change (e.g., new material in contact with body, closed-loop software update)..." required></textarea>
+      </div>
+      <button type="submit">Assess</button>
+    </form>
+
+    <div id="result">
+      <h2>Assessment Report</h2>
+      <div id="report-output" style="margin-bottom: 20px;"></div>
+    </div>
   </div>
 
   <script>
     const form = document.getElementById('change-form');
     const resultDiv = document.getElementById('result');
     const reportOutput = document.getElementById('report-output');
-    const downloadButton = document.getElementById('download-report');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -53,54 +120,43 @@
         });
 
         const result = await response.json();
-      
-        function formatReport(text) {
-  // Convert **bold** to <strong>
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  
-  // Convert - bullets to <li> inside <ul>
-  const lines = text.split('\n');
-  let inList = false;
-  let html = '';
-
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('- ')) {
-      if (!inList) {
-        html += '<ul>';
-        inList = true;
-      }
-      html += `<li>${trimmed.substring(2)}</li>`;
-    } else {
-      if (inList) {
-        html += '</ul>';
-        inList = false;
-      }
-      if (trimmed.length > 0) {
-        html += `<p>${trimmed}</p>`;
-      }
-    }
-  });
-
-  if (inList) html += '</ul>';
-  return html;
-}
         reportOutput.innerHTML = formatReport(result.report);
         resultDiv.style.display = 'block';
 
-        downloadButton.onclick = () => {
-          const blob = new Blob([result.report], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = result.report_filename;
-          a.click();
-          URL.revokeObjectURL(url);
-        };
       } catch (error) {
         alert('Error assessing change: ' + error.message);
       }
     });
+
+    function formatReport(text) {
+      text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      const lines = text.split('\n');
+      let inList = false;
+      let html = '';
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- ')) {
+          if (!inList) {
+            html += '<ul>';
+            inList = true;
+          }
+          html += `<li>${trimmed.substring(2)}</li>`;
+        } else {
+          if (inList) {
+            html += '</ul>';
+            inList = false;
+          }
+          if (trimmed.length > 0) {
+            html += `<p>${trimmed}</p>`;
+          }
+        }
+      });
+
+      if (inList) html += '</ul>';
+      return html;
+    }
   </script>
 </body>
 </html>
