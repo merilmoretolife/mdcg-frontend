@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MDCG Change Notification Assessment Tool</title>
+  <title>MDCG 2020-3 Change Assessment Tool</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -65,10 +65,41 @@
       width: 100%;
       font-size: 16px;
       border-radius: 4px;
+      position: relative;
     }
 
-    button:hover {
-      background: #0056b3;
+    button[disabled] {
+      background-color: #007bff;
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 3px solid white;
+      border-top: 3px solid #007BFF;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -8px;
+      margin-left: -8px;
+      display: none;
+    }
+
+    .loading .spinner {
+      display: inline-block;
+    }
+
+    .loading .btn-text {
+      visibility: hidden;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     #result {
@@ -84,14 +115,17 @@
 </head>
 <body>
   <div class="container">
-    <h1>MDCG 2020-3 Rev.1 Change Assessment Tool</h1>
+    <h1>MDCG 2020-3 Change Assessment Tool</h1>
 
     <form id="change-form">
       <div class="form-group">
         <label for="change_description">Change Description</label>
         <textarea name="change_description" id="change_description" placeholder="Describe the change (e.g., new material in contact with body, closed-loop software update)..." required></textarea>
       </div>
-      <button type="submit">Assess</button>
+      <button type="submit" id="submit-button">
+        <span class="btn-text">Assess</span>
+        <div class="spinner"></div>
+      </button>
     </form>
 
     <div id="result">
@@ -104,9 +138,15 @@
     const form = document.getElementById('change-form');
     const resultDiv = document.getElementById('result');
     const reportOutput = document.getElementById('report-output');
+    const submitButton = document.getElementById('submit-button');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // Add loading state
+      submitButton.classList.add("loading");
+      submitButton.disabled = true;
+
       const formData = new FormData(form);
       const data = {
         change_description: formData.get('change_description')
@@ -122,9 +162,12 @@
         const result = await response.json();
         reportOutput.innerHTML = formatReport(result.report);
         resultDiv.style.display = 'block';
-
       } catch (error) {
         alert('Error assessing change: ' + error.message);
+      } finally {
+        // Remove loading state
+        submitButton.classList.remove("loading");
+        submitButton.disabled = false;
       }
     });
 
