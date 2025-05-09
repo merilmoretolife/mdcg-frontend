@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDCG 2020-3 Change Notification Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        select, textarea, button { width: 100%; padding: 8px; box-sizing: border-box; }
+        textarea { height: 100px; }
+        button { background: #007BFF; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; display: none; }
+        .checkbox-group { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>MDCG 2020-3 Rev.1 Change Notification Tool</h1>
+    <form id="change-form">
+        <div class="form-group">
+            <label for="change_type">Change Type</label>
+            <select name="change_type" id="change_type" required>
+                <option value="intended_use">Intended Use</option>
+                <option value="design">Design</option>
+                <option value="materials">Materials</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="change_description">Change Description</label>
+            <textarea name="change_description" id="change_description" placeholder="Describe the change in detail..." required></textarea>
+        </div>
+        <div class="form-group">
+            <label>Optional: Specific Details (Check all that apply)</label>
+            <div class="checkbox-group">
+                <input type="checkbox" name="details[extends_use]" id="extends_use"> Extends intended use or adds indications/users<br>
+                <input type="checkbox" name="details[reduces_use]" id="reduces_use"> Reduces or eliminates indications<br>
+                <input type="checkbox" name="details[operating_principle]" id="operating_principle"> Changes operating principle<br>
+                <input type="checkbox" name="details[adverse_safety]" id="adverse_safety"> Adversely affects safety/performance<br>
+                <input type="checkbox" name="details[new_software_algorithm]" id="new_software_algorithm"> Introduces new software algorithm<br>
+                <input type="checkbox" name="details[new_material_contact]" id="new_material_contact"> New material in contact with body<br>
+                <input type="checkbox" name="details[new_supplier_critical]" id="new_supplier_critical"> New supplier for critical component<br>
+            </div>
+        </div>
+        <button type="submit">Assess Change</button>
+    </form>
+    <div id="result">
+        <h2>Assessment Result</h2>
+        <p><strong>Significant Change:</strong> <span id="significant"></span></p>
+        <p><strong>Justification:</strong></p>
+        <ul id="justification"></ul>
+        <p><strong>Recommended Actions:</strong></p>
+        <ul id="actions"></ul>
+        <button id="download-report">Download Report</button>
+    </div>
+
+    <script>
+        const form = document.getElementById('change-form');
+        const resultDiv = document.getElementById('result');
+        const significantSpan = document.getElementById('significant');
+        const justificationList = document.getElementById('justification');
+        const actionsList = document.getElementById('actions');
+        const downloadButton = document.getElementById('download-report');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = {
+                change_type: formData.get('change_type'),
+                change_description: formData.get('change_description'),
+                details: {
+                    extends_use: !!formData.get('details[extends_use]'),
+                    reduces_use: !!formData.get('details[reduces_use]'),
+                    operating_principle: !!formData.get('details[operating_principle]'),
+                    adverse_safety: !!formData.get('details[adverse_safety]'),
+                    new_software_algorithm: !!formData.get('details[new_software_algorithm]'),
+                    new_material_contact: !!formData.get('details[new_material_contact]'),
+                    new_supplier_critical: !!formData.get('details[new_supplier_critical]')
+                }
+            };
+
+            try {
+                const response = await fetch('https://https://mdcg-backend.onrender.com/assess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                // Display results
+                significantSpan.textContent = result.result.is_significant ? 'Yes' : 'No';
+                justificationList.innerHTML = result.result.justification.map(j => `<li>${j}</li>`).join('');
+                actionsList.innerHTML = result.result.actions.map(a => `<li>${a}</li>`).join('');
+                resultDiv.style.display = 'block';
+
+                // Enable report download
+                downloadButton.onclick = () => {
+                    const blob = new Blob([result.report], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = result.report_filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                };
+            } catch (error) {
+                alert('Error assessing change: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
