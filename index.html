@@ -53,7 +53,39 @@
         });
 
         const result = await response.json();
-        reportOutput.textContent = result.report;
+      
+        function formatReport(text) {
+  // Convert **bold** to <strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert - bullets to <li> inside <ul>
+  const lines = text.split('\n');
+  let inList = false;
+  let html = '';
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ')) {
+      if (!inList) {
+        html += '<ul>';
+        inList = true;
+      }
+      html += `<li>${trimmed.substring(2)}</li>`;
+    } else {
+      if (inList) {
+        html += '</ul>';
+        inList = false;
+      }
+      if (trimmed.length > 0) {
+        html += `<p>${trimmed}</p>`;
+      }
+    }
+  });
+
+  if (inList) html += '</ul>';
+  return html;
+}
+        reportOutput.innerHTML = formatReport(result.report);
         resultDiv.style.display = 'block';
 
         downloadButton.onclick = () => {
