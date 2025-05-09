@@ -1,87 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MDCG 2020-3 Change Assessment Tool</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
-        h1 { font-size: 24px; }
-        h2 { font-size: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        textarea { width: 100%; padding: 8px; box-sizing: border-box; height: 150px; }
-        button { background: #007BFF; color: white; border: none; cursor: pointer; padding: 10px; width: 100%; }
-        button:hover { background: #0056b3; }
-        #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; display: none; }
-        ul { margin: 10px 0; padding-left: 20px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MDCG 2020-3 Change Assessment Tool</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    textarea { width: 100%; padding: 8px; box-sizing: border-box; height: 150px; }
+    button { background: #007BFF; color: white; border: none; cursor: pointer; padding: 10px; width: 100%; }
+    button:hover { background: #0056b3; }
+    #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; display: none; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
-    <h1>MDCG 2020-3 Rev.1 Change Assessment Tool</h1>
-    <form id="change-form">
-        <div class="form-group">
-            <label for="change_description">Change Description</label>
-            <textarea name="change_description" id="change_description" placeholder="Enter the change (e.g., 'Changed hip prosthesis material to new titanium alloy in contact with tissue' or 'Updated software to improve feedback speed, no safety impact')..." required></textarea>
-        </div>
-        <button type="submit">Assess</button>
-    </form>
-    <div id="result">
-        <h2>Assessment Result</h2>
-        <p><strong>Change Type:</strong> <span id="change_type"></span></p>
-        <p><strong>Significant Change:</strong> <span id="significant"></span></p>
-        <p><strong>Justification:</strong></p>
-        <ul id="justification"></ul>
-        <p><strong>Recommended Actions:</strong></p>
-        <ul id="actions"></ul>
-        <button id="download-report">Download Report</button>
+  <h1>MDCG 2020-3 Rev.1 Change Assessment Tool</h1>
+  <form id="change-form">
+    <div class="form-group">
+      <label for="change_description">Change Description</label>
+      <textarea name="change_description" id="change_description" placeholder="Enter your change..." required></textarea>
     </div>
+    <button type="submit">Assess</button>
+  </form>
 
-    <script>
-        const form = document.getElementById('change-form');
-        const resultDiv = document.getElementById('result');
-        const changeTypeSpan = document.getElementById('change_type');
-        const significantSpan = document.getElementById('significant');
-        const justificationList = document.getElementById('justification');
-        const actionsList = document.getElementById('actions');
-        const downloadButton = document.getElementById('download-report');
+  <div id="result">
+    <h2>Assessment Report</h2>
+    <div id="report-output" style="margin-bottom: 20px;"></div>
+    <button id="download-report">Download Report</button>
+  </div>
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const data = {
-                change_description: formData.get('change_description')
-            };
+  <script>
+    const form = document.getElementById('change-form');
+    const resultDiv = document.getElementById('result');
+    const reportOutput = document.getElementById('report-output');
+    const downloadButton = document.getElementById('download-report');
 
-            try {
-                const response = await fetch('https://mdcg-backend.onrender.com/assess', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = {
+        change_description: formData.get('change_description')
+      };
 
-                // Display results
-                changeTypeSpan.textContent = result.change_type.replace('_', ' ').toUpperCase();
-                significantSpan.textContent = result.result.is_significant ? 'Yes' : 'No';
-                justificationList.innerHTML = result.result.justification.map(j => `<li>${j}</li>`).join('');
-                actionsList.innerHTML = result.result.actions.map(a => `<li>${a}</li>`).join('');
-                resultDiv.style.display = 'block';
-
-                // Enable report download
-                downloadButton.onclick = () => {
-                    const blob = new Blob([result.report], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = result.report_filename;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                };
-            } catch (error) {
-                alert('Error assessing change: ' + error.message);
-            }
+      try {
+        const response = await fetch('https://mdcg-backend.onrender.com/assess', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
         });
-    </script>
+
+        const result = await response.json();
+        reportOutput.textContent = result.report;
+        resultDiv.style.display = 'block';
+
+        downloadButton.onclick = () => {
+          const blob = new Blob([result.report], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = result.report_filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+      } catch (error) {
+        alert('Error assessing change: ' + error.message);
+      }
+    });
+  </script>
 </body>
 </html>
